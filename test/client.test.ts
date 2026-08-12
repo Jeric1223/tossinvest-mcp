@@ -176,3 +176,57 @@ test("undefined 쿼리 파라미터는 URL 에 넣지 않는다", async () => {
     assert.ok(dataCall.includes("symbol=005930"));
     assert.ok(!dataCall.includes("count="));
 });
+
+/** Routes by URL instead of call order, so concurrent requests stay deterministic. */
+function routingClient() {
+    const counts = { token: 0, accounts: 0, data: 0 };
+    const fetchImpl = (async (input: string | URL) => {
+        const url = String(input);
+        if (url.includes("/oauth2/token")) {
+            counts.token += 1;
+            return tokenResponse();
+        }
+        if (url.includes("/api/v1/accounts")) {
+            counts.accounts += 1;
+            return jsonResponse({
+                result: [{ accountNo: "1", accountSeq: 3, accountType: "BROKERAGE" }]
+            });
+        }
+        counts.data += 1;
+        return jsonResponse({ result: [] });
+    }) as unknown as typeof fetch;
+
+    const client = new TossClient({
+        clientId: "id",
+        clientSecret: "secret",
+        fetchImpl,
+        now: () => 0,
+        sleep: async () => {}
+    });
+    return { client, counts };
+}
+
+test("동시 요청 3건이 토큰을 한 번만 발급한다 (AUTH 5/s 초과 방지)", async () => {
+    const { client, counts } = routingClient();
+
+    await Promise.all([
+        client.get("/api/v1/prices"),
+        client.get("/api/v1/prices"),
+        client.get("/api/v1/prices")
+    ]);
+
+    assert.equal(counts.token, 1);
+    assert.equal(counts.data, 3);
+});
+
+test("동시 accountScoped 요청이 /accounts 를 한 번만 호출한다 (ACCOUNT 1/s 초과 방지)", async () => {
+    const { client, counts } = routingClient();
+
+    await Promise.all([
+        client.get("/api/v1/holdings", { accountScoped: true }),
+        client.get("/api/v1/buying-power", { accountScoped: true })
+    ]);
+
+    assert.equal(counts.accounts, 1);
+    assert.equal(counts.token, 1);
+});

@@ -30,6 +30,9 @@ const TIMEOUT_MS = 15_000;
 export class TossClient {
     private token?: CachedToken;
     private accountSeq?: number;
+    /** In-flight refreshes. Parallel tool calls must not each fire their own request. */
+    private tokenPromise?: Promise<string>;
+    private accountSeqPromise?: Promise<number>;
     private readonly baseUrl: string;
     private readonly fetchImpl: typeof fetch;
     private readonly now: () => number;
@@ -46,7 +49,18 @@ export class TossClient {
         if (this.token && this.token.expiresAt - TOKEN_SKEW_MS > this.now()) {
             return this.token.accessToken;
         }
+        // Coalesce concurrent refreshes. The AUTH group allows 5 req/s, and an MCP
+        // client routinely calls several tools at once — without this, each one
+        // would issue its own token and the surplus requests get rejected.
+        if (!this.tokenPromise) {
+            this.tokenPromise = this.issueToken().finally(() => {
+                this.tokenPromise = undefined;
+            });
+        }
+        return this.tokenPromise;
+    }
 
+    private async issueToken(): Promise<string> {
         const body = new URLSearchParams({
             grant_type: "client_credentials",
             client_id: this.options.clientId,
@@ -77,6 +91,17 @@ export class TossClient {
         if (this.accountSeq !== undefined) {
             return this.accountSeq;
         }
+        // Two account-scoped tools running in parallel would otherwise send two
+        // /accounts requests inside the same second and trip the 1 req/s limit.
+        if (!this.accountSeqPromise) {
+            this.accountSeqPromise = this.fetchAccountSeq().finally(() => {
+                this.accountSeqPromise = undefined;
+            });
+        }
+        return this.accountSeqPromise;
+    }
+
+    private async fetchAccountSeq(): Promise<number> {
         const accounts = await this.get<Account[]>("/api/v1/accounts");
         const target = accounts.find((account) => account.accountType === "BROKERAGE") ?? accounts[0];
         if (!target) {
