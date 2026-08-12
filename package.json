@@ -1,0 +1,22 @@
+{
+  "name": "toss-invest-mcp",
+  "version": "0.1.0",
+  "description": "Read-only MCP server for the Toss Securities (토스증권) Open API",
+  "license": "MIT",
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "bin": { "toss-invest-mcp": "dist/src/index.js" },
+  "scripts": {
+    "build": "tsc",
+    "test": "tsc && node --test dist/test/"
+  },
+  "keywords": ["mcp", "model-context-protocol", "toss", "tossinvest", "stocks", "korea"],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}
