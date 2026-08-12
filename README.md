@@ -1,16 +1,15 @@
 # tossinvest-mcp
 
-[한국어 안내](README.ko.md)
+[English](README.en.md)
 
-[Model Context Protocol (MCP)](https://modelcontextprotocol.io) server for the
-[Toss Securities Open API](https://developers.tossinvest.com). It provides
-market and account data plus a confirmation-gated flow for stock and
-conditional orders.
+[토스증권 Open API](https://developers.tossinvest.com)를 위한
+[Model Context Protocol (MCP)](https://modelcontextprotocol.io) 서버입니다.
+시세·계좌 조회와 함께, 사용자 확인을 거친 주식·조건주문 기능을 제공합니다.
 
-## Install in Claude Code
+## Claude Code에서 사용하기
 
-Once this package has been published to npm, cloning is not required. Add the
-following to `.mcp.json` in the project where you use Claude Code:
+이 패키지가 npm에 배포된 뒤에는 저장소를 clone할 필요가 없습니다. Claude Code를
+사용할 프로젝트의 `.mcp.json`에 아래 내용을 추가하세요.
 
 ```json
 {
@@ -19,52 +18,52 @@ following to `.mcp.json` in the project where you use Claude Code:
       "command": "npx",
       "args": ["-y", "@soehd0889/tossinvest-mcp"],
       "env": {
-        "TOSS_CLIENT_ID": "your_toss_client_id",
-        "TOSS_CLIENT_SECRET": "your_toss_client_secret"
+        "TOSS_CLIENT_ID": "토스_클라이언트_ID",
+        "TOSS_CLIENT_SECRET": "토스_클라이언트_시크릿"
       }
     }
   }
 }
 ```
 
-Get both values from the Toss Securities Open API developer console. Restart
-Claude Code after saving the file. Keep these credentials out of Git and never
-share them in a prompt or commit.
+토스증권 Open API 개발자 콘솔에서 `TOSS_CLIENT_ID`와
+`TOSS_CLIENT_SECRET`을 발급받아 입력한 뒤 Claude Code를 재시작하세요.
+자격 증명은 Git에 커밋하거나 프롬프트에 공유하면 안 됩니다.
 
-> `npx` downloads the package on the first run and reuses its cache later.
-> Node.js 18 or later is required.
+> `npx`는 첫 실행 때 패키지를 내려받고 이후에는 캐시를 사용합니다.
+> Node.js 18 이상이 필요합니다.
 
-## Tools
+## 제공 도구
 
-| Tool | Description |
+| 도구 | 설명 |
 | --- | --- |
-| `toss_get_price` | Current Korean and US stock prices |
-| `toss_resolve_symbol` | Resolves a company name to its ticker or Korean stock code |
-| `toss_get_holdings` | Positions and profit/loss |
-| `toss_get_buying_power` | Available KRW or USD cash |
-| `toss_get_exchange_rate` | Exchange rates; USD to KRW by default |
-| `toss_get_candles` | 1-minute or daily OHLCV candles |
-| `toss_get_orderbook` / `toss_get_recent_trades` | Live bid/ask levels and recent executions |
-| `toss_get_market_calendar` | Korean or US market sessions and holidays |
-| `toss_get_stock_warnings` | Investment cautions and trading warnings |
-| `toss_get_stock_investor_trading` / `toss_get_short_selling` | Korean stock investor flow and short-selling trends |
-| `toss_get_rankings` | Trading-amount, volume, gainer, and loser rankings |
-| `toss_get_market_indicator_prices` / `toss_get_market_indicator_candles` | Index and market-indicator prices and candles |
-| `toss_get_market_investor_trading` | KOSPI/KOSDAQ investor trading value trends |
-| `toss_prepare_order` | Validates and previews a stock order; does not trade |
-| `toss_prepare_conditional_order` | Validates and previews a SINGLE, OCO, or OTO order |
-| `toss_submit_prepared_order` | Submits a user-confirmed, single-use prepared order |
+| `toss_get_price` | 한국·미국 주식의 현재가 조회 |
+| `toss_resolve_symbol` | 회사 이름을 티커 또는 국내 종목 코드로 변환 |
+| `toss_get_holdings` | 보유 종목과 손익 조회 |
+| `toss_get_buying_power` | 원화 또는 달러 주문 가능 금액 조회 |
+| `toss_get_exchange_rate` | 환율 조회 (기본: USD → KRW) |
+| `toss_get_candles` | 1분봉 또는 일봉 OHLCV 조회 |
+| `toss_get_orderbook` / `toss_get_recent_trades` | 실시간 호가와 최근 체결 조회 |
+| `toss_get_market_calendar` | 한국·미국 장 운영 시간 및 휴장일 조회 |
+| `toss_get_stock_warnings` | 투자 유의사항·거래 경고 조회 |
+| `toss_get_stock_investor_trading` / `toss_get_short_selling` | 국내 종목 투자자 수급·공매도 동향 조회 |
+| `toss_get_rankings` | 거래대금·거래량·상승·하락 종목 랭킹 조회 |
+| `toss_get_market_indicator_prices` / `toss_get_market_indicator_candles` | 지수·시장 지표의 현재가와 캔들 조회 |
+| `toss_get_market_investor_trading` | 코스피·코스닥 투자자별 매매대금 조회 |
+| `toss_prepare_order` | 주식 주문을 검증·미리보기만 함 (실주문 없음) |
+| `toss_prepare_conditional_order` | SINGLE·OCO·OTO 조건주문을 검증·미리보기 |
+| `toss_submit_prepared_order` | 사용자 확인을 거친 일회용 주문을 제출 |
 
-## Trading safety
+## 주문 안전 절차
 
-Orders are always a two-step flow. `toss_prepare_order` and
-`toss_prepare_conditional_order` only create a preview. The assistant must show
-that preview and receive an explicit user confirmation before it can call
-`toss_submit_prepared_order`. The confirmation token is bound to that exact
-order, expires after 60 seconds, and is invalid after one use or a server
-restart. This reduces accidental orders but cannot replace the user's review.
+주문은 항상 2단계로 진행됩니다. `toss_prepare_order` 또는
+`toss_prepare_conditional_order`는 주문을 실행하지 않고 미리보기만 만듭니다.
+AI는 내용을 사용자에게 보여주고 명시적인 확인을 받은 후에만
+`toss_submit_prepared_order`를 호출해야 합니다. 확인 토큰은 정확히 그 주문에만
+연결되며 60초 후 만료되고, 한 번 사용하거나 서버를 재시작하면 무효화됩니다.
+이는 착오주문 위험을 낮추는 장치이며 사용자의 최종 검토를 대체하지 않습니다.
 
-## Local development
+## 로컬 개발
 
 ```bash
 git clone https://github.com/Jeric1223/tossinvest-mcp.git
@@ -73,26 +72,25 @@ npm install
 npm test
 ```
 
-For local use, create `.env` from `.env.example` and add your credentials:
+로컬에서 실행할 때는 `.env.example`을 복사해 자격 증명을 입력합니다.
 
 ```bash
 cp .env.example .env
 ```
 
-## Notes
+## 참고 사항
 
-- The first run downloads stock-master data for KOSPI, KOSDAQ, NASDAQ, NYSE,
-  and AMEX. It is cached and refreshed daily afterwards.
-- API numeric fields are returned as strings, and rate values are decimal
-  fractions (`-0.3799` means -37.99%).
-- The API rate limits are 15 requests/sec for market data, 5 for assets, and
-  1 for accounts.
+- 처음 실행하면 KOSPI, KOSDAQ, NASDAQ, NYSE, AMEX의 종목 마스터를
+  다운로드하며, 이후에는 캐시를 사용하고 하루에 한 번 백그라운드 갱신합니다.
+- API의 숫자 필드는 문자열로 오며, 등락률은 소수 형식입니다.
+  예: `-0.3799`는 -37.99%입니다.
+- API 제한은 시세 초당 15회, 자산 초당 5회, 계좌 초당 1회입니다.
 
-## Disclaimer
+## 면책 사항
 
-Unofficial; not affiliated with Toss Securities. This project provides no
-investment advice. Use at your own risk.
+이 프로젝트는 토스증권과 무관한 비공식 도구이며 투자 조언을 제공하지 않습니다.
+사용에 따른 책임은 사용자에게 있습니다.
 
-## License
+## 라이선스
 
 [MIT](LICENSE)

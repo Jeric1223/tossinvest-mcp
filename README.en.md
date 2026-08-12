@@ -1,0 +1,98 @@
+# tossinvest-mcp
+
+[한국어 안내](README.md)
+
+[Model Context Protocol (MCP)](https://modelcontextprotocol.io) server for the
+[Toss Securities Open API](https://developers.tossinvest.com). It provides
+market and account data plus a confirmation-gated flow for stock and
+conditional orders.
+
+## Install in Claude Code
+
+Once this package has been published to npm, cloning is not required. Add the
+following to `.mcp.json` in the project where you use Claude Code:
+
+```json
+{
+  "mcpServers": {
+    "toss": {
+      "command": "npx",
+      "args": ["-y", "@soehd0889/tossinvest-mcp"],
+      "env": {
+        "TOSS_CLIENT_ID": "your_toss_client_id",
+        "TOSS_CLIENT_SECRET": "your_toss_client_secret"
+      }
+    }
+  }
+}
+```
+
+Get both values from the Toss Securities Open API developer console. Restart
+Claude Code after saving the file. Keep these credentials out of Git and never
+share them in a prompt or commit.
+
+> `npx` downloads the package on the first run and reuses its cache later.
+> Node.js 18 or later is required.
+
+## Tools
+
+| Tool | Description |
+| --- | --- |
+| `toss_get_price` | Current Korean and US stock prices |
+| `toss_resolve_symbol` | Resolves a company name to its ticker or Korean stock code |
+| `toss_get_holdings` | Positions and profit/loss |
+| `toss_get_buying_power` | Available KRW or USD cash |
+| `toss_get_exchange_rate` | Exchange rates; USD to KRW by default |
+| `toss_get_candles` | 1-minute or daily OHLCV candles |
+| `toss_get_orderbook` / `toss_get_recent_trades` | Live bid/ask levels and recent executions |
+| `toss_get_market_calendar` | Korean or US market sessions and holidays |
+| `toss_get_stock_warnings` | Investment cautions and trading warnings |
+| `toss_get_stock_investor_trading` / `toss_get_short_selling` | Korean stock investor flow and short-selling trends |
+| `toss_get_rankings` | Trading-amount, volume, gainer, and loser rankings |
+| `toss_get_market_indicator_prices` / `toss_get_market_indicator_candles` | Index and market-indicator prices and candles |
+| `toss_get_market_investor_trading` | KOSPI/KOSDAQ investor trading value trends |
+| `toss_prepare_order` | Validates and previews a stock order; does not trade |
+| `toss_prepare_conditional_order` | Validates and previews a SINGLE, OCO, or OTO order |
+| `toss_submit_prepared_order` | Submits a user-confirmed, single-use prepared order |
+
+## Trading safety
+
+Orders are always a two-step flow. `toss_prepare_order` and
+`toss_prepare_conditional_order` only create a preview. The assistant must show
+that preview and receive an explicit user confirmation before it can call
+`toss_submit_prepared_order`. The confirmation token is bound to that exact
+order, expires after 60 seconds, and is invalid after one use or a server
+restart. This reduces accidental orders but cannot replace the user's review.
+
+## Local development
+
+```bash
+git clone https://github.com/Jeric1223/tossinvest-mcp.git
+cd tossinvest-mcp
+npm install
+npm test
+```
+
+For local use, create `.env` from `.env.example` and add your credentials:
+
+```bash
+cp .env.example .env
+```
+
+## Notes
+
+- The first run downloads stock-master data for KOSPI, KOSDAQ, NASDAQ, NYSE,
+  and AMEX. It is cached and refreshed daily afterwards.
+- API numeric fields are returned as strings, and rate values are decimal
+  fractions (`-0.3799` means -37.99%).
+- The API rate limits are 15 requests/sec for market data, 5 for assets, and
+  1 for accounts.
+
+## Disclaimer
+
+Unofficial; not affiliated with Toss Securities. This project provides no
+investment advice. Use at your own risk.
+
+## License
+
+[MIT](LICENSE)
