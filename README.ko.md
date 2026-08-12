@@ -2,10 +2,9 @@
 
 [English](README.md)
 
-[토스증권 Open API](https://developers.tossinvest.com)를 위한 읽기 전용
+[토스증권 Open API](https://developers.tossinvest.com)를 위한
 [Model Context Protocol (MCP)](https://modelcontextprotocol.io) 서버입니다.
-AI 어시스턴트가 시세와 계좌 정보를 조회할 수 있게 하되, 주문·정정·취소 기능은
-구현하지 않습니다.
+시세·계좌 조회와 함께, 사용자 확인을 거친 주식·조건주문 기능을 제공합니다.
 
 ## Claude Code에서 사용하기
 
@@ -44,6 +43,18 @@ AI 어시스턴트가 시세와 계좌 정보를 조회할 수 있게 하되, �
 | `toss_get_buying_power` | 원화 또는 달러 주문 가능 금액 조회 |
 | `toss_get_exchange_rate` | 환율 조회 (기본: USD → KRW) |
 | `toss_get_candles` | 1분봉 또는 일봉 OHLCV 조회 |
+| `toss_prepare_order` | 주식 주문을 검증·미리보기만 함 (실주문 없음) |
+| `toss_prepare_conditional_order` | SINGLE·OCO·OTO 조건주문을 검증·미리보기 |
+| `toss_submit_prepared_order` | 사용자 확인을 거친 일회용 주문을 제출 |
+
+## 주문 안전 절차
+
+주문은 항상 2단계로 진행됩니다. `toss_prepare_order` 또는
+`toss_prepare_conditional_order`는 주문을 실행하지 않고 미리보기만 만듭니다.
+AI는 내용을 사용자에게 보여주고 명시적인 확인을 받은 후에만
+`toss_submit_prepared_order`를 호출해야 합니다. 확인 토큰은 정확히 그 주문에만
+연결되며 60초 후 만료되고, 한 번 사용하거나 서버를 재시작하면 무효화됩니다.
+이는 착오주문 위험을 낮추는 장치이며 사용자의 최종 검토를 대체하지 않습니다.
 
 ## 로컬 개발
 

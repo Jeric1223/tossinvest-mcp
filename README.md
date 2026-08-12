@@ -2,10 +2,10 @@
 
 [한국어 안내](README.ko.md)
 
-A read-only [Model Context Protocol (MCP)](https://modelcontextprotocol.io)
-server for the [Toss Securities Open API](https://developers.tossinvest.com).
-It lets an AI assistant retrieve market data and account information without
-placing, changing, or cancelling orders.
+[Model Context Protocol (MCP)](https://modelcontextprotocol.io) server for the
+[Toss Securities Open API](https://developers.tossinvest.com). It provides
+market and account data plus a confirmation-gated flow for stock and
+conditional orders.
 
 ## Install in Claude Code
 
@@ -44,6 +44,18 @@ share them in a prompt or commit.
 | `toss_get_buying_power` | Available KRW or USD cash |
 | `toss_get_exchange_rate` | Exchange rates; USD to KRW by default |
 | `toss_get_candles` | 1-minute or daily OHLCV candles |
+| `toss_prepare_order` | Validates and previews a stock order; does not trade |
+| `toss_prepare_conditional_order` | Validates and previews a SINGLE, OCO, or OTO order |
+| `toss_submit_prepared_order` | Submits a user-confirmed, single-use prepared order |
+
+## Trading safety
+
+Orders are always a two-step flow. `toss_prepare_order` and
+`toss_prepare_conditional_order` only create a preview. The assistant must show
+that preview and receive an explicit user confirmation before it can call
+`toss_submit_prepared_order`. The confirmation token is bound to that exact
+order, expires after 60 seconds, and is invalid after one use or a server
+restart. This reduces accidental orders but cannot replace the user's review.
 
 ## Local development
 

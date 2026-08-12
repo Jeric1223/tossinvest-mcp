@@ -1,7 +1,7 @@
 {
   "name": "@soehd0889/tossinvest-mcp",
-  "version": "0.1.0",
-  "description": "Read-only MCP server for the Toss Securities (토스증권) Open API",
+  "version": "0.2.0",
+  "description": "MCP server for the Toss Securities (토스증권) Open API with confirmed order flow",
   "license": "MIT",
   "type": "module",
   "engines": { "node": ">=18" },

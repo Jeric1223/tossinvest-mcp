@@ -115,6 +115,27 @@ export class TossClient {
         path: string,
         options: { query?: Record<string, string | undefined>; accountScoped?: boolean } = {}
     ): Promise<T> {
+        return this.request<T>("GET", path, options);
+    }
+
+    async post<T>(path: string, body: unknown, accountScoped = true): Promise<T> {
+        return this.request<T>("POST", path, { accountScoped, body });
+    }
+
+    async delete(path: string, accountScoped = true): Promise<void> {
+        await this.request<void>("DELETE", path, { accountScoped, emptyResponse: true });
+    }
+
+    private async request<T>(
+        method: "GET" | "POST" | "DELETE",
+        path: string,
+        options: {
+            query?: Record<string, string | undefined>;
+            accountScoped?: boolean;
+            body?: unknown;
+            emptyResponse?: boolean;
+        } = {}
+    ): Promise<T> {
         let authRetried = false;
         let backoffAttempt = 0;
 
@@ -125,6 +146,9 @@ export class TossClient {
             if (options.accountScoped) {
                 headers["X-Tossinvest-Account"] = String(await this.getAccountSeq());
             }
+            if (options.body !== undefined) {
+                headers["Content-Type"] = "application/json";
+            }
 
             const url = new URL(this.baseUrl + path);
             for (const [key, value] of Object.entries(options.query ?? {})) {
@@ -134,11 +158,14 @@ export class TossClient {
             }
 
             const response = await this.fetchImpl(url, {
+                method,
                 headers,
+                body: options.body === undefined ? undefined : JSON.stringify(options.body),
                 signal: AbortSignal.timeout(TIMEOUT_MS)
             });
 
             if (response.ok) {
+                if (options.emptyResponse || response.status === 204) return undefined as T;
                 return unwrap<T>(await response.json());
             }
 
