@@ -44,6 +44,13 @@ share them in a prompt or commit.
 | `toss_get_buying_power` | Available KRW or USD cash |
 | `toss_get_exchange_rate` | Exchange rates; USD to KRW by default |
 | `toss_get_candles` | 1-minute or daily OHLCV candles |
+| `toss_get_orderbook` / `toss_get_recent_trades` | Live bid/ask levels and recent executions |
+| `toss_get_market_calendar` | Korean or US market sessions and holidays |
+| `toss_get_stock_warnings` | Investment cautions and trading warnings |
+| `toss_get_stock_investor_trading` / `toss_get_short_selling` | Korean stock investor flow and short-selling trends |
+| `toss_get_rankings` | Trading-amount, volume, gainer, and loser rankings |
+| `toss_get_market_indicator_prices` / `toss_get_market_indicator_candles` | Index and market-indicator prices and candles |
+| `toss_get_market_investor_trading` | KOSPI/KOSDAQ investor trading value trends |
 | `toss_prepare_order` | Validates and previews a stock order; does not trade |
 | `toss_prepare_conditional_order` | Validates and previews a SINGLE, OCO, or OTO order |
 | `toss_submit_prepared_order` | Submits a user-confirmed, single-use prepared order |

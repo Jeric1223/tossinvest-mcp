@@ -13,6 +13,7 @@ import { registerBuyingPowerTool } from "./tools/buyingPower.js";
 import { registerExchangeRateTool } from "./tools/exchangeRate.js";
 import { registerCandlesTool } from "./tools/candles.js";
 import { registerOrderTools } from "./tools/orders.js";
+import { registerMarketDataTools } from "./tools/marketData.js";
 
 // From dist/src/index.js, two levels up is the package root.
 // Deriving it from the file location keeps us independent of the launcher's cwd.
@@ -69,6 +70,7 @@ registerBuyingPowerTool(server, client);
 registerExchangeRateTool(server, client);
 registerCandlesTool(server, client);
 registerOrderTools(server, client);
+registerMarketDataTools(server, client);
 
 // stdout carries the MCP protocol. All logging must go to stderr.
 await server.connect(new StdioServerTransport());

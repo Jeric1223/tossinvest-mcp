@@ -43,6 +43,13 @@
 | `toss_get_buying_power` | 원화 또는 달러 주문 가능 금액 조회 |
 | `toss_get_exchange_rate` | 환율 조회 (기본: USD → KRW) |
 | `toss_get_candles` | 1분봉 또는 일봉 OHLCV 조회 |
+| `toss_get_orderbook` / `toss_get_recent_trades` | 실시간 호가와 최근 체결 조회 |
+| `toss_get_market_calendar` | 한국·미국 장 운영 시간 및 휴장일 조회 |
+| `toss_get_stock_warnings` | 투자 유의사항·거래 경고 조회 |
+| `toss_get_stock_investor_trading` / `toss_get_short_selling` | 국내 종목 투자자 수급·공매도 동향 조회 |
+| `toss_get_rankings` | 거래대금·거래량·상승·하락 종목 랭킹 조회 |
+| `toss_get_market_indicator_prices` / `toss_get_market_indicator_candles` | 지수·시장 지표의 현재가와 캔들 조회 |
+| `toss_get_market_investor_trading` | 코스피·코스닥 투자자별 매매대금 조회 |
 | `toss_prepare_order` | 주식 주문을 검증·미리보기만 함 (실주문 없음) |
 | `toss_prepare_conditional_order` | SINGLE·OCO·OTO 조건주문을 검증·미리보기 |
 | `toss_submit_prepared_order` | 사용자 확인을 거친 일회용 주문을 제출 |
