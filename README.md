@@ -17,7 +17,7 @@ following to `.mcp.json` in the project where you use Claude Code:
   "mcpServers": {
     "toss": {
       "command": "npx",
-      "args": ["-y", "tossinvest-mcp"],
+      "args": ["-y", "@soehd0889/tossinvest-mcp"],
       "env": {
         "TOSS_CLIENT_ID": "your_toss_client_id",
         "TOSS_CLIENT_SECRET": "your_toss_client_secret"

@@ -17,7 +17,7 @@ AI 어시스턴트가 시세와 계좌 정보를 조회할 수 있게 하되, �
   "mcpServers": {
     "toss": {
       "command": "npx",
-      "args": ["-y", "tossinvest-mcp"],
+      "args": ["-y", "@soehd0889/tossinvest-mcp"],
       "env": {
         "TOSS_CLIENT_ID": "토스_클라이언트_ID",
         "TOSS_CLIENT_SECRET": "토스_클라이언트_시크릿"
