@@ -6,6 +6,8 @@
 [Model Context Protocol (MCP)](https://modelcontextprotocol.io) 서버입니다.
 시세·계좌 조회와 함께, 사용자 확인을 거친 주식·조건주문 기능을 제공합니다.
 
+toss client key 생성 : https://corp.tossinvest.com/ko/open-api
+
 ## Claude Code에서 사용하기
 
 이 패키지가 npm에 배포된 뒤에는 저장소를 clone할 필요가 없습니다. Claude Code를
