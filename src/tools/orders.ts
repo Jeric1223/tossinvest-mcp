@@ -6,7 +6,17 @@ import { ConfirmationStore } from "../confirmation.js";
 const decimal = z.string().regex(/^\d+(\.\d+)?$/, "Use a positive decimal string");
 const side = z.enum(["BUY", "SELL"]);
 const orderType = z.enum(["LIMIT", "MARKET"]);
-const leg = z.object({ orderSide: side, triggerPrice: decimal, orderPrice: decimal.optional() });
+const leg = z.object({
+    orderSide: side.describe("Direction of this leg: BUY or SELL."),
+    triggerPrice: decimal
+        .describe("Price that activates this leg, as a positive decimal string, e.g. '71000'."),
+    orderPrice: decimal
+        .optional()
+        .describe(
+            "Limit price submitted once the leg triggers. Required when orderType is LIMIT; " +
+                "must be omitted when orderType is MARKET."
+        )
+});
 
 type DirectOrder = {
     symbol: string; side: "BUY" | "SELL"; orderType: "LIMIT" | "MARKET";
@@ -55,14 +65,45 @@ function validateConditional(order: ConditionalOrder): void {
 
 export function registerOrderTools(server: McpServer, client: TossClient): void {
     const confirmations = new ConfirmationStore<Pending>();
-    const prepareDescription = "This never places an order. Show its returned preview to the user and obtain an explicit final confirmation before calling toss_submit_prepared_order. The token expires after 60 seconds and can only be used once.";
+    // Shared safety contract, appended after each tool's own purpose sentence so that an agent
+    // reading only the description can still tell the six prepare_* tools apart.
+    const safetyContract =
+        " Nothing reaches the market from this call: it only validates the request and returns a " +
+        "preview plus a confirmation token. Show that preview to the user, obtain explicit approval, " +
+        "then pass the token to toss_submit_prepared_order. The token is single-use and expires 60 " +
+        "seconds after this call.";
 
     server.registerTool("toss_prepare_order", {
-        title: "Prepare stock order", description: prepareDescription,
+        title: "Prepare stock order",
+        description:
+            "Previews a NEW market or limit order to buy or sell one stock immediately. " +
+            "For trigger-based orders use toss_prepare_conditional_order; to change or withdraw an " +
+            "order that already exists use toss_prepare_order_modify or toss_prepare_order_cancel." +
+            safetyContract,
         inputSchema: {
-            symbol: z.string().min(1), side, orderType,
-            quantity: decimal.optional(), orderAmount: decimal.optional(), price: decimal.optional(),
-            timeInForce: z.enum(["DAY", "CLS"]).optional()
+            symbol: z.string().min(1).describe(
+                "Korean 6-digit code (e.g. '005930') or US ticker (e.g. 'NVDA'). " +
+                    "Call toss_resolve_symbol first if you only have a company name."
+            ),
+            side: side.describe("BUY to open or increase a position, SELL to reduce or close one."),
+            orderType: orderType.describe(
+                "LIMIT executes only at `price` or better and requires `price`. " +
+                    "MARKET executes at the prevailing price and must omit `price`."
+            ),
+            quantity: decimal.optional().describe(
+                "Share count as a positive decimal string. Provide exactly one of `quantity` or `orderAmount`."
+            ),
+            orderAmount: decimal.optional().describe(
+                "Cash amount to spend instead of a share count, as a positive decimal string. " +
+                    "Valid only for MARKET orders. Provide exactly one of `quantity` or `orderAmount`."
+            ),
+            price: decimal.optional().describe(
+                "Limit price as a positive decimal string. Required for LIMIT, rejected for MARKET."
+            ),
+            timeInForce: z.enum(["DAY", "CLS"]).optional().describe(
+                "DAY keeps the order working for the current session; CLS routes it to the closing " +
+                    "auction. Defaults to DAY when omitted."
+            )
         }, annotations: { destructiveHint: true, openWorldHint: true }
     }, async (order) => {
         validateDirect(order);
@@ -72,9 +113,35 @@ export function registerOrderTools(server: McpServer, client: TossClient): void 
     });
 
     server.registerTool("toss_prepare_conditional_order", {
-        title: "Prepare conditional stock order", description: prepareDescription,
-        inputSchema: { symbol: z.string().min(1), type: z.enum(["SINGLE", "OCO", "OTO"]), quantity: decimal, orderType,
-            expireDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), first: leg, second: leg.optional() },
+        title: "Prepare conditional stock order",
+        description:
+            "Previews a NEW conditional order that stays dormant until its trigger price is reached. " +
+            "SINGLE arms one leg. OCO arms two legs where filling either one cancels the other " +
+            "(typical take-profit plus stop-loss pair). OTO arms a second leg that is placed only " +
+            "after the first leg fills. For an order that should execute right away use " +
+            "toss_prepare_order instead." +
+            safetyContract,
+        inputSchema: {
+            symbol: z.string().min(1).describe(
+                "Korean 6-digit code (e.g. '005930') or US ticker (e.g. 'NVDA'). " +
+                    "Call toss_resolve_symbol first if you only have a company name."
+            ),
+            type: z.enum(["SINGLE", "OCO", "OTO"]).describe(
+                "SINGLE uses `first` only. OCO and OTO both require `second`."
+            ),
+            quantity: decimal.describe("Share count for the order, as a positive decimal string."),
+            orderType: orderType.describe(
+                "LIMIT requires `orderPrice` on every leg. MARKET forbids it. " +
+                    "OCO and OTO accept LIMIT only."
+            ),
+            expireDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe(
+                "Last KST date the condition stays armed, formatted YYYY-MM-DD, e.g. '2026-12-31'."
+            ),
+            first: leg.describe("Primary leg, armed as soon as the order is accepted."),
+            second: leg.optional().describe(
+                "Second leg. Required for OCO and OTO; must be omitted for SINGLE."
+            )
+        },
         annotations: { destructiveHint: true, openWorldHint: true }
     }, async (order) => {
         validateConditional(order);
@@ -84,8 +151,25 @@ export function registerOrderTools(server: McpServer, client: TossClient): void 
     });
 
     server.registerTool("toss_prepare_order_modify", {
-        title: "Prepare order modification", description: prepareDescription,
-        inputSchema: { orderId: z.string().min(1), orderType, quantity: decimal.optional(), price: decimal.optional() },
+        title: "Prepare order modification",
+        description:
+            "Previews a change to an EXISTING open regular order — its quantity, price, or order type. " +
+            "The order keeps its identity; only the listed fields change. Find the orderId with " +
+            "toss_get_orders (status 'OPEN'). Use toss_prepare_conditional_order_modify for " +
+            "conditional orders." +
+            safetyContract,
+        inputSchema: {
+            orderId: z.string().min(1).describe("Identifier of the open order, as returned by toss_get_orders."),
+            orderType: orderType.describe(
+                "Order type after the change. LIMIT requires `price`; MARKET forbids it."
+            ),
+            quantity: decimal.optional().describe(
+                "New share count as a positive decimal string. Omit to leave the quantity unchanged."
+            ),
+            price: decimal.optional().describe(
+                "New limit price as a positive decimal string. Required when `orderType` is LIMIT."
+            )
+        },
         annotations: { destructiveHint: true, openWorldHint: true }
     }, async (request) => {
         if (request.orderType === "LIMIT" && !request.price) throw new Error("LIMIT modifications require price.");
@@ -95,16 +179,49 @@ export function registerOrderTools(server: McpServer, client: TossClient): void 
     });
 
     server.registerTool("toss_prepare_order_cancel", {
-        title: "Prepare order cancellation", description: prepareDescription,
-        inputSchema: { orderId: z.string().min(1) }, annotations: { destructiveHint: true, openWorldHint: true }
+        title: "Prepare order cancellation",
+        description:
+            "Previews the withdrawal of an EXISTING open regular order so that none of its remaining " +
+            "quantity can fill. Already-executed shares are unaffected — cancelling never reverses a " +
+            "fill. Find the orderId with toss_get_orders (status 'OPEN'). Use " +
+            "toss_prepare_conditional_order_cancel for conditional orders." +
+            safetyContract,
+        inputSchema: {
+            orderId: z.string().min(1).describe("Identifier of the open order to cancel, as returned by toss_get_orders.")
+        }, annotations: { destructiveHint: true, openWorldHint: true }
     }, async ({ orderId }) => {
         const prepared = confirmations.create({ kind: "cancel_order", orderId });
         return result({ status: "awaiting_user_confirmation", cancelOrderId: orderId, confirmationToken: prepared.token, expiresAt: prepared.expiresAt });
     });
 
     server.registerTool("toss_prepare_conditional_order_modify", {
-        title: "Prepare conditional order modification", description: prepareDescription,
-        inputSchema: { conditionalOrderId: z.string().min(1), type: z.enum(["SINGLE", "OCO", "OTO"]), quantity: decimal, orderType, expireDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), first: leg, second: leg.optional() },
+        title: "Prepare conditional order modification",
+        description:
+            "Previews a change to an EXISTING conditional order that has not triggered yet — its " +
+            "trigger prices, legs, quantity, or expiry. Every field is replaced, so send the complete " +
+            "intended state rather than only the parts you want changed. The symbol cannot be changed; " +
+            "cancel and create a new order for that. Find the conditionalOrderId with " +
+            "toss_get_conditional_orders (status 'OPEN')." +
+            safetyContract,
+        inputSchema: {
+            conditionalOrderId: z.string().min(1).describe(
+                "Identifier of the conditional order, as returned by toss_get_conditional_orders."
+            ),
+            type: z.enum(["SINGLE", "OCO", "OTO"]).describe(
+                "Type after the change. SINGLE uses `first` only; OCO and OTO both require `second`."
+            ),
+            quantity: decimal.describe("Share count after the change, as a positive decimal string."),
+            orderType: orderType.describe(
+                "LIMIT requires `orderPrice` on every leg. MARKET forbids it. OCO and OTO accept LIMIT only."
+            ),
+            expireDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe(
+                "Last KST date the condition stays armed, formatted YYYY-MM-DD."
+            ),
+            first: leg.describe("Primary leg after the change."),
+            second: leg.optional().describe(
+                "Second leg. Required for OCO and OTO; must be omitted for SINGLE."
+            )
+        },
         annotations: { destructiveHint: true, openWorldHint: true }
     }, async (request) => {
         validateConditional({ ...request, symbol: "_" });
@@ -113,8 +230,17 @@ export function registerOrderTools(server: McpServer, client: TossClient): void 
     });
 
     server.registerTool("toss_prepare_conditional_order_cancel", {
-        title: "Prepare conditional order cancellation", description: prepareDescription,
-        inputSchema: { conditionalOrderId: z.string().min(1) }, annotations: { destructiveHint: true, openWorldHint: true }
+        title: "Prepare conditional order cancellation",
+        description:
+            "Previews the removal of an EXISTING conditional order so that it can no longer trigger. " +
+            "Legs that already triggered and became live orders are unaffected — cancel those with " +
+            "toss_prepare_order_cancel. Find the conditionalOrderId with toss_get_conditional_orders." +
+            safetyContract,
+        inputSchema: {
+            conditionalOrderId: z.string().min(1).describe(
+                "Identifier of the conditional order to remove, as returned by toss_get_conditional_orders."
+            )
+        }, annotations: { destructiveHint: true, openWorldHint: true }
     }, async ({ conditionalOrderId }) => {
         const prepared = confirmations.create({ kind: "cancel_conditional", conditionalOrderId });
         return result({ status: "awaiting_user_confirmation", cancelConditionalOrderId: conditionalOrderId, confirmationToken: prepared.token, expiresAt: prepared.expiresAt });
@@ -123,7 +249,15 @@ export function registerOrderTools(server: McpServer, client: TossClient): void 
     server.registerTool("toss_submit_prepared_order", {
         title: "Submit confirmed prepared order",
         description: "Places the previously prepared order. Call only after the user has explicitly confirmed the exact preview in this conversation. The confirmation token is single-use and expires after 60 seconds.",
-        inputSchema: { confirmationToken: z.string().uuid(), userConfirmed: z.literal(true).describe("Must be true only after the user explicitly confirms the preview") },
+        inputSchema: {
+            confirmationToken: z.string().uuid().describe(
+                "The token returned by the matching toss_prepare_* call. It is bound to that exact " +
+                    "preview, so a token cannot be reused for a different order."
+            ),
+            userConfirmed: z.literal(true).describe(
+                "Set to true only after the user has explicitly approved the preview in this conversation."
+            )
+        },
         annotations: { destructiveHint: true, openWorldHint: true }
     }, async ({ confirmationToken }) => {
         const pending = confirmations.consume(confirmationToken);

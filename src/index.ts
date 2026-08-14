@@ -62,7 +62,12 @@ const { clientId, clientSecret } = loadCredentials();
 const client = new TossClient({ clientId, clientSecret });
 const symbols = await loadSymbolIndex(client, resolve(packageRoot, "cache/symbols.json"));
 
-const server = new McpServer({ name: "toss", version: "0.1.0" });
+// Read the version from package.json so the MCP handshake never drifts from the published release.
+const { version } = JSON.parse(readFileSync(resolve(packageRoot, "package.json"), "utf8")) as {
+    version: string;
+};
+
+const server = new McpServer({ name: "toss", version });
 
 registerPriceTool(server, client, symbols);
 registerResolveSymbolTool(server, symbols);
