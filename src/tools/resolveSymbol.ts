@@ -2,7 +2,10 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SymbolIndex } from "../symbols.js";
 
-export function registerResolveSymbolTool(server: McpServer, symbols: SymbolIndex): void {
+export function registerResolveSymbolTool(
+    server: McpServer,
+    loadSymbols: () => Promise<SymbolIndex>
+): void {
     server.registerTool(
         "toss_resolve_symbol",
         {
@@ -17,7 +20,7 @@ export function registerResolveSymbolTool(server: McpServer, symbols: SymbolInde
             annotations: { readOnlyHint: true }
         },
         async ({ query }) => {
-            const result = symbols.resolve(query);
+            const result = (await loadSymbols()).resolve(query);
             return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
         }
     );

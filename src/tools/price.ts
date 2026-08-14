@@ -14,7 +14,7 @@ interface PriceResponse {
 export function registerPriceTool(
     server: McpServer,
     client: TossClient,
-    symbols: SymbolIndex
+    loadSymbols: () => Promise<SymbolIndex>
 ): void {
     server.registerTool(
         "toss_get_price",
@@ -34,13 +34,16 @@ export function registerPriceTool(
             annotations: { readOnlyHint: true, openWorldHint: true }
         },
         async ({ symbols: requested }) => {
-            const prices = await client.get<PriceResponse[]>("/api/v1/prices", {
-                query: { symbols: requested.join(",") }
-            });
+            const [prices, index] = await Promise.all([
+                client.get<PriceResponse[]>("/api/v1/prices", {
+                    query: { symbols: requested.join(",") }
+                }),
+                loadSymbols()
+            ]);
 
             const rows = prices.map((price) => ({
                 symbol: price.symbol,
-                name: symbols.nameOf(price.symbol) ?? null,
+                name: index.nameOf(price.symbol) ?? null,
                 lastPrice: toNumber(price.lastPrice),
                 currency: price.currency,
                 timestamp: price.timestamp

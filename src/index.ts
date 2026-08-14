@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { TossClient } from "./client.js";
-import { loadSymbolIndex } from "./symbols.js";
+import { loadSymbolIndex, type SymbolIndex } from "./symbols.js";
 import { registerPriceTool } from "./tools/price.js";
 import { registerResolveSymbolTool } from "./tools/resolveSymbol.js";
 import { registerHoldingsTool } from "./tools/holdings.js";
@@ -60,7 +60,13 @@ function loadCredentials(): { clientId: string; clientSecret: string } {
 
 const { clientId, clientSecret } = loadCredentials();
 const client = new TossClient({ clientId, clientSecret });
-const symbols = await loadSymbolIndex(client, resolve(packageRoot, "cache/symbols.json"));
+
+// The stock master requires a live authenticated call. Fetching it during startup would
+// abort the process before the first handshake whenever the credentials are wrong, so the
+// server could not even list its tools. Load it on first use and reuse the same promise.
+let symbolIndex: Promise<SymbolIndex> | undefined;
+const symbols = (): Promise<SymbolIndex> =>
+    (symbolIndex ??= loadSymbolIndex(client, resolve(packageRoot, "cache/symbols.json")));
 
 // Read the version from package.json so the MCP handshake never drifts from the published release.
 const { version } = JSON.parse(readFileSync(resolve(packageRoot, "package.json"), "utf8")) as {
