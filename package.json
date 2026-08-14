@@ -1,6 +1,6 @@
 {
   "name": "@soehd0889/tossinvest-mcp",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "Claude에서 토스증권 Open API로 국내·미국 주식의 시세·호가·차트·잔고를 조회하고 확인 절차를 거쳐 주문하는 MCP 서버. Toss Securities MCP server for Korean and US stock market data and confirmation-gated trading.",
   "license": "MIT",
   "type": "module",
