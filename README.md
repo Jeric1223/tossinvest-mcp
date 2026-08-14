@@ -1,10 +1,13 @@
-# tossinvest-mcp
+# 토스증권 MCP 서버 (tossinvest-mcp)
 
 [English](README.en.md)
 
-[토스증권 Open API](https://developers.tossinvest.com)를 위한
-[Model Context Protocol (MCP)](https://modelcontextprotocol.io) 서버입니다.
-시세·계좌 조회와 함께, 사용자 확인을 거친 주식·조건주문 기능을 제공합니다.
+**Claude에서 토스증권 계좌로 국내·미국 주식을 조회하고 주문할 수 있게 해주는
+[Model Context Protocol (MCP)](https://modelcontextprotocol.io) 서버입니다.**
+[토스증권 Open API](https://developers.tossinvest.com)를 사용해 주식 시세·호가·
+체결·차트·투자자 수급·보유 종목·주문 가능 금액·환율을 조회하고, 사용자 확인
+절차를 거쳐 일반 주문과 SINGLE·OCO·OTO 조건주문을 등록합니다. Claude Code,
+Claude Desktop 등 MCP를 지원하는 AI 클라이언트에서 바로 사용할 수 있습니다.
 
 toss client key 생성 : https://corp.tossinvest.com/ko/open-api
 

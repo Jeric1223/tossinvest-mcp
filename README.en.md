@@ -1,11 +1,15 @@
-# tossinvest-mcp
+# Toss Securities MCP Server (tossinvest-mcp)
 
 [한국어 안내](README.md)
 
-[Model Context Protocol (MCP)](https://modelcontextprotocol.io) server for the
-[Toss Securities Open API](https://developers.tossinvest.com). It provides
-market and account data plus a confirmation-gated flow for stock and
-conditional orders.
+**A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that
+lets Claude read and trade Korean and US stocks through a Toss Securities
+(토스증권) account.** Built on the
+[Toss Securities Open API](https://developers.tossinvest.com), it exposes
+quotes, order books, trades, candles, investor flows, holdings, buying power,
+and exchange rates, and places both regular and SINGLE/OCO/OTO conditional
+orders behind an explicit user-confirmation step. Works with Claude Code,
+Claude Desktop, and any MCP-capable AI client.
 
 ## Install in Claude Code
 
